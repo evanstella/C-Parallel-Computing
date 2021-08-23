@@ -22,7 +22,7 @@ static void             internal_job_delete      ( parpool_job* job );
 static void             internal_queue_delete    ( parpool_queue* queue );
 
 static parpool_job*     internal_job_request     ( parpool_queue* queue );
-static void*            internal_worker_routine  ( void* argv );
+static void             internal_worker_routine  ( void* argv );
 
 
 
@@ -86,6 +86,7 @@ void parpool_eval ( parpool* pool, future* f, void* (*fcn)(void*), void* argv )
     parpool_job* job = internal_job_init( f, fcn, argv );
 
     parpool_queue* queue = pool->queue;
+    pthread_mutex_lock( &queue->mutex_lock );
     if ( queue->next_job == NULL )
     {
         queue->next_job = job;
@@ -97,6 +98,7 @@ void parpool_eval ( parpool* pool, future* f, void* (*fcn)(void*), void* argv )
         queue->last_job = job;
     }
     queue->length++;
+    pthread_mutex_unlock( &queue->mutex_lock );
 }
 
 /******************************************************************************
@@ -145,6 +147,8 @@ static parpool_job* internal_job_init ( future* f, void* (*fcn)(void*), void* ar
  *****************************************************************************/
 static parpool_job* internal_job_request ( parpool_queue* queue )
 {
+    if ( queue->length == 0 ) return NULL;
+
     pthread_mutex_lock( &queue->mutex_lock );
     parpool_job* job = queue->next_job;
     if ( job != NULL )
@@ -192,9 +196,9 @@ static void internal_worker_init ( int id, parpool_queue* queue, worker* w )
     w->status = WORKING;
     w->job_queue = queue;
 
-    if ( pthread_create( &w->thread, NULL, &internal_worker_routine, (void*) w ) != 0 ) 
+    if ( pthread_create( 
+        &w->thread, NULL, (void*) &internal_worker_routine, (void*) w ) != 0 ) 
         perror( "Error: unable to create worker thread." );
-
 }
 
 /******************************************************************************
@@ -247,6 +251,8 @@ static void internal_parpool_cleanup ( parpool* pool )
 static void internal_worker_delete ( worker* wrker )
 {
     wrker->status = SHUTDOWN;
+
+
     if ( pthread_join( wrker->thread, NULL ) != 0 )
         printf("Error: unable to shutdown worker.");
 }
@@ -272,7 +278,7 @@ static void internal_queue_delete ( parpool_queue* queue )
 /******************************************************************************
  * The main routine run by each worker
  *****************************************************************************/
-static void* internal_worker_routine ( void* args ) 
+static void internal_worker_routine ( void* args ) 
 {
     worker* this_worker = ( worker* ) args;
 
@@ -293,5 +299,4 @@ static void* internal_worker_routine ( void* args )
         internal_job_delete( job );
     }
 
-    pthread_exit( NULL );
 }
