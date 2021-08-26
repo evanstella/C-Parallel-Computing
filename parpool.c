@@ -39,9 +39,8 @@ parpool* parpool_init ( int num_workers )
 {
     if ( num_workers < 1 )
     {
-        internal_parpool_error( 
-            NULL, 
-            (char*) "Number of parallel workers must be greater than 0" 
+        internal_parpool_error ( 
+            NULL, "Number of parallel workers must be greater than 0" 
         );
     }
 
@@ -78,7 +77,7 @@ void parpool_delete ( parpool* pool )
  *****************************************************************************/
 void parpool_eval ( parpool* pool, future* f, void* (*fcn)(void*), void* argv )
 {
-    f-> status = QUEUED;
+    f-> status = JOB_QUEUED;
     f->fcn = fcn;
     f->inputs = argv;
     f->output = NULL;
@@ -106,7 +105,7 @@ void parpool_eval ( parpool* pool, future* f, void* (*fcn)(void*), void* argv )
  *****************************************************************************/
 void parpool_wait ( future* future )
 {
-    while(1) if ( future->status == COMPLETED ) return;
+    while(1) if ( future->status == JOB_COMPLETED ) return;
 }
 
 /******************************************************************************
@@ -119,7 +118,7 @@ void parpool_wait_all ( future* futures, int num_futures )
     {
         for ( int i = 0; i < num_futures; i++ )
         {
-            if ( futures[i].status == COMPLETED )
+            if ( futures[i].status == JOB_COMPLETED )
                 num_completed++;
         }
         if ( num_completed >= num_futures )
@@ -193,7 +192,7 @@ static void internal_worker_init ( int id, parpool_queue* queue, worker* w )
         perror( "Error: unable to allocate worker." );
 
     w->id = id;
-    w->status = WORKING;
+    w->status = WORKER_WORKING;
     w->job_queue = queue;
 
     if ( pthread_create( 
@@ -250,7 +249,7 @@ static void internal_parpool_cleanup ( parpool* pool )
  *****************************************************************************/
 static void internal_worker_delete ( worker* wrker )
 {
-    wrker->status = SHUTDOWN;
+    wrker->status = WORKER_SHUTDOWN;
 
 
     if ( pthread_join( wrker->thread, NULL ) != 0 )
@@ -282,19 +281,18 @@ static void internal_worker_routine ( void* args )
 {
     worker* this_worker = ( worker* ) args;
 
-    while ( this_worker->status != SHUTDOWN ) 
+    while ( this_worker->status != WORKER_SHUTDOWN ) 
     {
         parpool_job* job = internal_job_request( this_worker->job_queue );
         if ( job == NULL )
             continue;
 
-        printf("thread %d:", this_worker->id);
         // evaluate the actual function
         future* future = job->future;
-        future->status = RUNNING;
+        future->status = JOB_RUNNING;
         void* out = job->fcn( job->fcn_args );
         job->future->output = out;
-        future->status = COMPLETED;
+        future->status = JOB_COMPLETED;
 
         internal_job_delete( job );
     }

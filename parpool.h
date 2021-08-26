@@ -22,9 +22,9 @@
  *****************************************************************************/
 typedef enum future_status
 {
-    COMPLETED,
-    RUNNING,
-    QUEUED
+    JOB_COMPLETED,
+    JOB_RUNNING,
+    JOB_QUEUED
 
 } future_status;
 
@@ -103,9 +103,9 @@ typedef struct parpool_queue
  *****************************************************************************/
 typedef enum worker_status
 {
-    WORKING,
-    IDLEING,
-    SHUTDOWN
+    WORKER_WORKING,
+    WORKER_IDLEING,
+    WORKER_SHUTDOWN
 
 } worker_status;
 
@@ -134,7 +134,7 @@ typedef struct worker
  * 
  * Attributes:
  *      pool_size:  the number of workers
- *      workers:    pointers to all the workers
+ *      workers:    pointer to all the workers
  *      queue:      the pool's job queue 
  *
  *****************************************************************************/
@@ -170,20 +170,45 @@ parpool* parpool_init ( int num_workers );
  * Delete a parpool and clean up associated resources
  * 
  * Parameters:
- *      pool_size:  the number of workers
- *      workers:    pointers to all the workers
- *      queue:      the pool's job queue 
- *
- * Returns:
- *      A reference to the initialized parpool object
+ *      pool:       the parpool to delete
  *
  *****************************************************************************/
 void parpool_delete ( parpool* pool );
 
-void parpool_eval ( parpool* pool, future* f, void* (*fcn)(void*), void* argv );
+/******************************************************************************
+ *
+ * Add a job to be evaluated by the parpool.
+ * 
+ * Parameters:
+ *      pool:       the parpool to execute on
+ *      fcn:        the function to execute
+ *      arg:        the argument to pass to fcn 
+ *
+ *****************************************************************************/
+void parpool_eval ( parpool* pool, future* f, void* (*fcn)(void*), void* arg );
 
+/******************************************************************************
+ *
+ * Wait for a single future to be done. Will halt the main process until the 
+ * inputted future has completed.
+ * 
+ * Parameters:
+ *      future:     the future to wait for
+ *
+ *****************************************************************************/
 void parpool_wait ( future* future );
 
+/******************************************************************************
+ *
+ * Wait futures to be done. Will halt the main process until the inputted 
+ * number of futures has completed.
+ * 
+ * Parameters:
+ *      futures:        the futures to wait for
+ *      num_futures:    the number of futures to wait for. Should be equal to
+ *                      the length of futures.
+ *
+ *****************************************************************************/
 void parpool_wait_all ( future* futures, int num_futures );
 
 
