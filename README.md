@@ -53,7 +53,7 @@ int main ( void )
     // allocate the futures
     future futures[10];
     
-    // use the parpool to mulitply integers 1-9 by 2;
+    // use the parpool to multiply integers 1-9 by 2;
     int numbers[10];
     for ( int i = 0; i < 10; i++ )
     {
