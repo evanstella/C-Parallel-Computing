@@ -32,7 +32,7 @@ This is a simple asynchronous parallel thread pool implementation for ANSI C tha
 
 ## Example Usage
 
-In the following extremely simple example, we will use the parallel pool to mulitply an array of integers by 2:
+In the following extremely simple example, we will use the parallel pool to multiply an array of integers by 2:
 
 ```C
 
