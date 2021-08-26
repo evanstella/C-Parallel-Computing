@@ -20,13 +20,13 @@
  *      QUEUED:     the job is on the queue waiting to be run
  *
  *****************************************************************************/
-typedef enum future_status
+enum future_status
 {
     JOB_COMPLETED,
     JOB_RUNNING,
     JOB_QUEUED
 
-} future_status;
+};
 
 /******************************************************************************
  * 
@@ -42,10 +42,10 @@ typedef enum future_status
  *****************************************************************************/
 typedef struct future
 {
-    future_status   status;
-    void*           ( *fcn )( void* );
-    void*           inputs;
-    void*           output;
+    enum future_status      status;
+    void*                   ( *fcn )( void* );
+    void*                   inputs;
+    void*                   output;
 
 } future;
 
@@ -60,13 +60,13 @@ typedef struct future
  *      next_job:   the next job in the queue
  * 
  *****************************************************************************/
-typedef struct parpool_job parpool_job;
+struct parpool_job;
 struct parpool_job
 {
-    void*           ( *fcn )( void* );
-    void*           fcn_args;
-    future*         future;
-    parpool_job*    next_job;
+    void*                   ( *fcn )( void* );
+    void*                   fcn_args;
+    future*                 future;
+    struct parpool_job*     next_job;
 
 };
 
@@ -82,14 +82,14 @@ struct parpool_job
  *                  synchronized
  *
  *****************************************************************************/
-typedef struct parpool_queue
+struct parpool_queue
 {
-    int             length;
-    parpool_job*    next_job;
-    parpool_job*    last_job;
-    pthread_mutex_t mutex_lock;
+    int                     length;
+    struct parpool_job*     next_job;
+    struct parpool_job*     last_job;
+    pthread_mutex_t         mutex_lock;
     
-} parpool_queue;
+};
 
 /******************************************************************************
  * 
@@ -101,13 +101,13 @@ typedef struct parpool_queue
  *      SHUTDOWN:   a shutdown request has been sent to the worker
  *
  *****************************************************************************/
-typedef enum worker_status
+enum worker_status
 {
     WORKER_WORKING,
     WORKER_IDLEING,
     WORKER_SHUTDOWN
 
-} worker_status;
+};
 
 /******************************************************************************
  * 
@@ -119,14 +119,14 @@ typedef enum worker_status
  *      job_queue:  a pointer to the pool's job queue
  *
  *****************************************************************************/
-typedef struct worker
+struct worker
 {
-    int             id;
-    worker_status   status;
-    pthread_t       thread;
-    parpool_queue*  job_queue;
+    int                     id;
+    enum worker_status      status;
+    pthread_t               thread;
+    struct parpool_queue*   job_queue;
 
-} worker;
+};
 
 /******************************************************************************
  * 
@@ -140,9 +140,9 @@ typedef struct worker
  *****************************************************************************/
 typedef struct parpool
 {
-    int             pool_size;
-    worker*         workers;
-    parpool_queue*  queue;
+    int                     pool_size;
+    struct worker*          workers;
+    struct parpool_queue*   queue;
 
 } parpool;
 

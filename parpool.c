@@ -8,21 +8,21 @@
 /******************************************************************************
  *                            Internal Functions
  *****************************************************************************/
-static parpool_queue*   internal_queue_init      ( );
-static void             internal_worker_init     ( int id, parpool_queue* q, worker* w );
-static parpool_job*     internal_job_init        ( future* f, void* (*fcn)(void*), void* argv );
+static struct parpool_queue*    internal_queue_init      ( );
+static void                     internal_worker_init     ( int id, struct parpool_queue*, struct worker* );
+static struct parpool_job*      internal_job_init        ( future*, void* (*fcn)(void*), void* arg );
 
-static void             internal_parpool_error   ( parpool* pool, const char* msg );
+static void                     internal_parpool_error   ( parpool*, const char* msg );
 
-static void             internal_queue_clear     ( parpool_queue* queue );
-static void             internal_parpool_cleanup ( parpool* pool );
+static void                     internal_queue_clear     ( struct parpool_queue* );
+static void                     internal_parpool_cleanup ( parpool* );
 
-static void             internal_worker_delete   ( worker* worker );
-static void             internal_job_delete      ( parpool_job* job );
-static void             internal_queue_delete    ( parpool_queue* queue );
+static void                     internal_worker_delete   ( struct worker* );
+static void                     internal_job_delete      ( struct parpool_job* );
+static void                     internal_queue_delete    ( struct parpool_queue* );
 
-static parpool_job*     internal_job_request     ( parpool_queue* queue );
-static void             internal_worker_routine  ( void* argv );
+static struct parpool_job*      internal_job_request     ( struct parpool_queue* );
+static void                     internal_worker_routine  ( void* argv );
 
 
 
@@ -53,7 +53,7 @@ parpool* parpool_init ( int num_workers )
     if ( pool->queue == NULL )
         internal_parpool_error( pool, "Error initializing queue." );
 
-    pool->workers = ( worker* ) malloc( num_workers * sizeof(worker) );
+    pool->workers = ( struct worker* ) malloc( num_workers * sizeof(struct worker) );
     if ( pool->workers == NULL )
         internal_parpool_error( pool, "Error allocating worker." );
     for ( int i = 0; i < num_workers; i++ ) 
@@ -82,9 +82,9 @@ void parpool_eval ( parpool* pool, future* f, void* (*fcn)(void*), void* argv )
     f->inputs = argv;
     f->output = NULL;
 
-    parpool_job* job = internal_job_init( f, fcn, argv );
+    struct parpool_job* job = internal_job_init( f, fcn, argv );
 
-    parpool_queue* queue = pool->queue;
+    struct parpool_queue* queue = pool->queue;
     pthread_mutex_lock( &queue->mutex_lock );
     if ( queue->next_job == NULL )
     {
@@ -130,9 +130,9 @@ void parpool_wait_all ( future* futures, int num_futures )
 /******************************************************************************
  * initialize a job object 
  *****************************************************************************/
-static parpool_job* internal_job_init ( future* f, void* (*fcn)(void*), void* argv )
+static struct parpool_job* internal_job_init ( future* f, void* (*fcn)(void*), void* argv )
 {
-    parpool_job* job = ( parpool_job* ) malloc( sizeof(parpool_job) );
+    struct parpool_job* job = ( struct parpool_job* ) malloc( sizeof(struct parpool_job) );
     job->fcn = fcn;
     job->fcn_args = argv;
     job->future = f;
@@ -144,12 +144,12 @@ static parpool_job* internal_job_init ( future* f, void* (*fcn)(void*), void* ar
 /******************************************************************************
  * get the next job in the queue and pop the queue
  *****************************************************************************/
-static parpool_job* internal_job_request ( parpool_queue* queue )
+static struct parpool_job* internal_job_request ( struct parpool_queue* queue )
 {
     if ( queue->length == 0 ) return NULL;
 
     pthread_mutex_lock( &queue->mutex_lock );
-    parpool_job* job = queue->next_job;
+    struct parpool_job* job = queue->next_job;
     if ( job != NULL )
     {
         queue->next_job = job->next_job;
@@ -162,9 +162,9 @@ static parpool_job* internal_job_request ( parpool_queue* queue )
 /******************************************************************************
  * initialize the a job queue
  *****************************************************************************/
-static parpool_queue* internal_queue_init ( )
+static struct parpool_queue* internal_queue_init ( )
 {
-    parpool_queue* queue = ( parpool_queue* ) malloc( sizeof(parpool_queue) );
+    struct parpool_queue* queue = ( struct parpool_queue* ) malloc( sizeof(struct parpool_queue) );
     if ( queue == NULL )
     {
         perror( "Error: unable to allocate queue" );
@@ -186,7 +186,7 @@ static parpool_queue* internal_queue_init ( )
 /******************************************************************************
  * initialize the a worker to begin waiting for jobs on the queue
  *****************************************************************************/
-static void internal_worker_init ( int id, parpool_queue* queue, worker* w )
+static void internal_worker_init ( int id, struct parpool_queue* queue, struct worker* w )
 {
     if ( w == NULL ) 
         perror( "Error: unable to allocate worker." );
@@ -213,13 +213,13 @@ static void internal_parpool_error ( parpool* pool, const char* msg )
 /******************************************************************************
  * clear the job queue and free malloced memory
  *****************************************************************************/
-static void internal_queue_clear ( parpool_queue* queue )
+static void internal_queue_clear ( struct parpool_queue* queue )
 {
     if ( queue == NULL ) return;
-    parpool_job* job_ptr = queue->next_job;
+    struct parpool_job* job_ptr = queue->next_job;
     while ( job_ptr != NULL )
     {
-        parpool_job* tmp = job_ptr->next_job;
+        struct parpool_job* tmp = job_ptr->next_job;
         internal_job_delete( job_ptr );
         job_ptr = tmp;
     }
@@ -247,7 +247,7 @@ static void internal_parpool_cleanup ( parpool* pool )
 /******************************************************************************
  * delete and free worker
  *****************************************************************************/
-static void internal_worker_delete ( worker* wrker )
+static void internal_worker_delete ( struct worker* wrker )
 {
     wrker->status = WORKER_SHUTDOWN;
 
@@ -259,7 +259,7 @@ static void internal_worker_delete ( worker* wrker )
 /******************************************************************************
  * delete and free job
  *****************************************************************************/
-static void internal_job_delete ( parpool_job* job )
+static void internal_job_delete ( struct parpool_job* job )
 {
     free( job );
 } 
@@ -267,7 +267,7 @@ static void internal_job_delete ( parpool_job* job )
 /******************************************************************************
  * delete and free queue
  *****************************************************************************/
-static void internal_queue_delete ( parpool_queue* queue )
+static void internal_queue_delete ( struct parpool_queue* queue )
 {
     internal_queue_clear( queue );
     pthread_mutex_destroy( &queue->mutex_lock );
@@ -279,11 +279,11 @@ static void internal_queue_delete ( parpool_queue* queue )
  *****************************************************************************/
 static void internal_worker_routine ( void* args ) 
 {
-    worker* this_worker = ( worker* ) args;
+    struct worker* this_worker = ( struct worker* ) args;
 
     while ( this_worker->status != WORKER_SHUTDOWN ) 
     {
-        parpool_job* job = internal_job_request( this_worker->job_queue );
+        struct parpool_job* job = internal_job_request( this_worker->job_queue );
         if ( job == NULL )
             continue;
 
