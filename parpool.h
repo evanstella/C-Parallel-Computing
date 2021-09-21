@@ -67,9 +67,9 @@ enum future_status
 typedef struct future
 {
     enum future_status      status;
-    void*                   ( *fcn )( void* );
-    void*                   inputs;
-    void*                   output;
+    void *                  ( *fcn )( void * );
+    void *                  inputs;
+    void *                  output;
 
 } future;
 
@@ -84,12 +84,11 @@ typedef struct future
  *      next_job:   the next job in the queue
  * 
  *****************************************************************************/
-struct parpool_job;
 struct parpool_job
 {
-    void*                   ( *fcn )( void* );
-    void*                   fcn_args;
-    future*                 future;
+    void *                  ( *fcn )( void * );
+    void *                  fcn_args;
+    future *                future;
     struct parpool_job*     next_job;
 
 };
@@ -109,8 +108,8 @@ struct parpool_job
 struct parpool_queue
 {
     int                     length;
-    struct parpool_job*     next_job;
-    struct parpool_job*     last_job;
+    struct parpool_job *    next_job;
+    struct parpool_job *    last_job;
     pthread_mutex_t         mutex_lock;
     
 };
@@ -148,7 +147,7 @@ struct worker
     int                     id;
     enum worker_status      status;
     pthread_t               thread;
-    struct parpool_queue*   job_queue;
+    struct parpool_queue *  job_queue;
 
 };
 
@@ -165,8 +164,8 @@ struct worker
 typedef struct parpool
 {
     int                     pool_size;
-    struct worker*          workers;
-    struct parpool_queue*   queue;
+    struct worker *         workers;
+    struct parpool_queue *  queue;
 
 } parpool;
 
@@ -197,7 +196,7 @@ parpool* parpool_init ( int num_workers );
  *      pool:       the parpool to delete
  *
  *****************************************************************************/
-void parpool_delete ( parpool* pool );
+void parpool_delete ( parpool *pool );
 
 /******************************************************************************
  *
@@ -209,7 +208,7 @@ void parpool_delete ( parpool* pool );
  *      arg:        the argument to pass to fcn 
  *
  *****************************************************************************/
-void parpool_eval ( parpool* pool, future* f, void* (*fcn)(void*), void* arg );
+void parpool_eval ( parpool *pool, future *f, void *(fcn)(void *), void *arg );
 
 /******************************************************************************
  *
@@ -220,7 +219,7 @@ void parpool_eval ( parpool* pool, future* f, void* (*fcn)(void*), void* arg );
  *      future:     the future to wait for
  *
  *****************************************************************************/
-void parpool_wait ( future* future );
+void parpool_wait ( future *future );
 
 /******************************************************************************
  *
@@ -233,7 +232,7 @@ void parpool_wait ( future* future );
  *                      the length of futures.
  *
  *****************************************************************************/
-void parpool_wait_all ( future* futures, int num_futures );
+void parpool_wait_all ( future *futures, int num_futures );
 
 
 
