@@ -57,7 +57,7 @@ enum future_status
  * A future to poll asynchronous jobs. Is created when a job is added to the
  * parpool queue.
  * 
- * Attributes:
+ * Fields:
  *      status:     0 = completed, 1 = running, 2 = queued
  *      fcn:        pointer to the function that is being executed for the job
  *      inputs:     the inputs that went into the function being run
@@ -77,7 +77,7 @@ typedef struct future
  * 
  * A job to be executed on the parpool
  * 
- * Attributes:
+ * Fields:
  *      fcn:        pointer to the function that is being executed for the job
  *      fcn_args:   the inputs to go into the function being run
  *      future:     the future that is tracking this job
@@ -97,7 +97,7 @@ struct parpool_job
  * 
  * A queue of jobs to be executed on the parpool
  * 
- * Attributes:
+ * Fields:
  *      length:     the length of the queue
  *      next_job:   the job at the front of the queue;
  *      last_job:   the last job in the queue;
@@ -136,13 +136,13 @@ enum worker_status
  * 
  * A worker on the parpool to execute jobs
  * 
- * Attributes:
+ * Fields:
  *      id:         an identifier
  *      thread:     the underlying pthread executing the job
  *      job_queue:  a pointer to the pool's job queue
  *
  *****************************************************************************/
-struct worker
+struct parpool_worker
 {
     int                     id;
     enum worker_status      status;
@@ -155,7 +155,7 @@ struct worker
  * 
  * The parallel pool of workers
  * 
- * Attributes:
+ * Fields:
  *      pool_size:  the number of workers
  *      workers:    pointer to all the workers
  *      queue:      the pool's job queue 
@@ -164,7 +164,7 @@ struct worker
 typedef struct parpool
 {
     int                     pool_size;
-    struct worker *         workers;
+    struct parpool_worker * workers;
     struct parpool_queue *  queue;
 
 } parpool;
@@ -186,7 +186,7 @@ typedef struct parpool
  *      A reference to the initialized parpool object
  *
  *****************************************************************************/
-parpool* parpool_init ( int num_workers );
+parpool * parpool_init ( int num_workers );
 
 /******************************************************************************
  *

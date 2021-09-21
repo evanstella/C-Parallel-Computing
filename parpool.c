@@ -38,7 +38,7 @@ static void                     internal_worker_init
                                 ( 
                                     int id, 
                                     struct parpool_queue *q, 
-                                    struct worker *wrkr
+                                    struct parpool_worker *wrkr
                                 );
 
 static struct parpool_job *     internal_job_init 
@@ -57,7 +57,7 @@ static void                     internal_parpool_error
 static void                     internal_queue_clear     ( struct parpool_queue *q );
 static void                     internal_parpool_cleanup ( parpool *pool );
 
-static void                     internal_worker_delete   ( struct worker *wrkr );
+static void                     internal_worker_delete   ( struct parpool_worker *wrkr );
 static void                     internal_job_delete      ( struct parpool_job *pool );
 static void                     internal_queue_delete    ( struct parpool_queue *q );
 
@@ -93,7 +93,8 @@ parpool * parpool_init ( int num_workers )
     if ( pool->queue == NULL )
         internal_parpool_error( pool, "Error initializing queue." );
 
-    pool->workers = ( struct worker * ) malloc( num_workers*sizeof(struct worker) );
+    pool->workers = ( struct parpool_worker * )
+        malloc( num_workers*sizeof(struct parpool_worker) );
     if ( pool->workers == NULL )
         internal_parpool_error( pool, "Error allocating worker." );
     for ( int i = 0; i < num_workers; i++ ) 
@@ -230,7 +231,7 @@ static struct parpool_queue* internal_queue_init ( )
 /******************************************************************************
  * initialize the a worker to begin waiting for jobs on the queue
  *****************************************************************************/
-static void internal_worker_init ( int id, struct parpool_queue *q, struct worker *w )
+static void internal_worker_init ( int id, struct parpool_queue *q, struct parpool_worker *w )
 {
     if ( w == NULL ) 
         perror( "Error: unable to allocate worker." );
@@ -291,7 +292,7 @@ static void internal_parpool_cleanup ( parpool *pool )
 /******************************************************************************
  * delete and free worker
  *****************************************************************************/
-static void internal_worker_delete ( struct worker *wrker )
+static void internal_worker_delete ( struct parpool_worker *wrker )
 {
     wrker->status = WORKER_SHUTDOWN;
 
@@ -322,7 +323,7 @@ static void internal_queue_delete ( struct parpool_queue *queue )
  *****************************************************************************/
 static void internal_worker_routine ( void *args ) 
 {
-    struct worker *this_worker = ( struct worker * ) args;
+    struct parpool_worker *this_worker = ( struct parpool_worker * ) args;
 
     while ( this_worker->status != WORKER_SHUTDOWN ) 
     {
