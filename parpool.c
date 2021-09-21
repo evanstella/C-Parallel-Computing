@@ -32,21 +32,37 @@ SOFTWARE.
 /******************************************************************************
  *                            Internal Functions
  *****************************************************************************/
-static struct parpool_queue*    internal_queue_init      ( );
-static void                     internal_worker_init     ( int id, struct parpool_queue*, struct worker* );
-static struct parpool_job*      internal_job_init        ( future*, void* (*fcn)(void*), void* arg );
+static struct parpool_queue *   internal_queue_init ( );
 
-static void                     internal_parpool_error   ( parpool*, const char* msg );
+static void                     internal_worker_init 
+                                ( 
+                                    int id, 
+                                    struct parpool_queue *q, 
+                                    struct worker *wrkr
+                                );
 
-static void                     internal_queue_clear     ( struct parpool_queue* );
-static void                     internal_parpool_cleanup ( parpool* );
+static struct parpool_job *     internal_job_init 
+                                ( 
+                                    future * fut, 
+                                    void *(fcn)(void *), 
+                                    void *arg 
+                                );
 
-static void                     internal_worker_delete   ( struct worker* );
-static void                     internal_job_delete      ( struct parpool_job* );
-static void                     internal_queue_delete    ( struct parpool_queue* );
+static void                     internal_parpool_error 
+                                ( 
+                                    parpool *pool, 
+                                    const char *msg 
+                                );
 
-static struct parpool_job*      internal_job_request     ( struct parpool_queue* );
-static void                     internal_worker_routine  ( void* argv );
+static void                     internal_queue_clear     ( struct parpool_queue *q );
+static void                     internal_parpool_cleanup ( parpool *pool );
+
+static void                     internal_worker_delete   ( struct worker *wrkr );
+static void                     internal_job_delete      ( struct parpool_job *pool );
+static void                     internal_queue_delete    ( struct parpool_queue *q );
+
+static struct parpool_job *     internal_job_request     ( struct parpool_queue *q );
+static void                     internal_worker_routine  ( void *argv );
 
 
 
@@ -59,7 +75,7 @@ static void                     internal_worker_routine  ( void* argv );
 /******************************************************************************
  * Initialize parpool queue and workers
  *****************************************************************************/
-parpool* parpool_init ( int num_workers )
+parpool * parpool_init ( int num_workers )
 {
     if ( num_workers < 1 )
     {
@@ -68,7 +84,7 @@ parpool* parpool_init ( int num_workers )
         );
     }
 
-    parpool* pool = ( parpool* ) malloc( sizeof(parpool) );
+    parpool *pool = ( parpool * ) malloc( sizeof(parpool) );
     if ( pool == NULL )
         internal_parpool_error( pool, "Error initializing parpool." );
 
@@ -77,7 +93,7 @@ parpool* parpool_init ( int num_workers )
     if ( pool->queue == NULL )
         internal_parpool_error( pool, "Error initializing queue." );
 
-    pool->workers = ( struct worker* ) malloc( num_workers * sizeof(struct worker) );
+    pool->workers = ( struct worker * ) malloc( num_workers*sizeof(struct worker) );
     if ( pool->workers == NULL )
         internal_parpool_error( pool, "Error allocating worker." );
     for ( int i = 0; i < num_workers; i++ ) 
@@ -89,7 +105,7 @@ parpool* parpool_init ( int num_workers )
 /******************************************************************************
  * free the memory malloced by the pool
  *****************************************************************************/
-void parpool_delete ( parpool* pool )
+void parpool_delete ( parpool *pool )
 {
     if ( pool == NULL ) return;
     internal_parpool_cleanup( pool );
@@ -99,23 +115,23 @@ void parpool_delete ( parpool* pool )
 /******************************************************************************
  * add a job to the queue
  *****************************************************************************/
-void parpool_eval ( parpool* pool, future* f, void* (*fcn)(void*), void* argv )
+void parpool_eval ( parpool *pool, future *f, void *(fcn)(void *), void *argv )
 {
     f-> status = JOB_QUEUED;
     f->fcn = fcn;
     f->inputs = argv;
     f->output = NULL;
 
-    struct parpool_job* job = internal_job_init( f, fcn, argv );
+    struct parpool_job *job = internal_job_init( f, fcn, argv );
 
-    struct parpool_queue* queue = pool->queue;
+    struct parpool_queue *queue = pool->queue;
     pthread_mutex_lock( &queue->mutex_lock );
-    if ( queue->next_job == NULL )
+    if ( queue->next_job == NULL ) 
     {
         queue->next_job = job;
         queue->last_job = job;
     }
-    else
+    else 
     {
         queue->last_job->next_job = job;
         queue->last_job = job;
@@ -127,7 +143,7 @@ void parpool_eval ( parpool* pool, future* f, void* (*fcn)(void*), void* argv )
 /******************************************************************************
  * wait for a future to complete
  *****************************************************************************/
-void parpool_wait ( future* future )
+void parpool_wait ( future *future )
 {
     while(1) if ( future->status == JOB_COMPLETED ) return;
 }
@@ -135,12 +151,11 @@ void parpool_wait ( future* future )
 /******************************************************************************
  * wait for all futures to complete
  *****************************************************************************/
-void parpool_wait_all ( future* futures, int num_futures )
+void parpool_wait_all ( future *futures, int num_futures )
 {
     int num_completed = 0;
-    while(1) 
-    {
-        for ( int i = 0; i < num_futures; i++ )
+    while(1) {
+        for ( int i = 0; i < num_futures; i++ ) 
         {
             if ( futures[i].status == JOB_COMPLETED )
                 num_completed++;
@@ -174,11 +189,13 @@ static struct parpool_job* internal_job_request ( struct parpool_queue* queue )
 
     pthread_mutex_lock( &queue->mutex_lock );
     struct parpool_job* job = queue->next_job;
-    if ( job != NULL )
+
+    if ( job != NULL ) 
     {
         queue->next_job = job->next_job;
         queue->length--;
     }
+
     pthread_mutex_unlock( &queue->mutex_lock );
     return job;
 }
@@ -188,17 +205,20 @@ static struct parpool_job* internal_job_request ( struct parpool_queue* queue )
  *****************************************************************************/
 static struct parpool_queue* internal_queue_init ( )
 {
-    struct parpool_queue* queue = ( struct parpool_queue* ) malloc( sizeof(struct parpool_queue) );
-    if ( queue == NULL )
+    struct parpool_queue *queue;
+
+    queue = ( struct parpool_queue * ) malloc( sizeof(struct parpool_queue) );
+    if ( queue == NULL ) 
     {
         perror( "Error: unable to allocate queue" );
         return NULL;
     }
+
     queue->length   = 0;
     queue->next_job = NULL;
     queue->last_job = NULL;
     
-    if ( pthread_mutex_init( &queue->mutex_lock, NULL ) != 0 )
+    if ( pthread_mutex_init( &queue->mutex_lock, NULL ) != 0 ) 
     {
         printf("Error: initializing queue mutex lock");
         return NULL;
@@ -210,24 +230,24 @@ static struct parpool_queue* internal_queue_init ( )
 /******************************************************************************
  * initialize the a worker to begin waiting for jobs on the queue
  *****************************************************************************/
-static void internal_worker_init ( int id, struct parpool_queue* queue, struct worker* w )
+static void internal_worker_init ( int id, struct parpool_queue *q, struct worker *w )
 {
     if ( w == NULL ) 
         perror( "Error: unable to allocate worker." );
 
     w->id = id;
     w->status = WORKER_WORKING;
-    w->job_queue = queue;
+    w->job_queue = q;
 
     if ( pthread_create( 
-        &w->thread, NULL, (void*) &internal_worker_routine, (void*) w ) != 0 ) 
+            &w->thread, NULL, (void*) &internal_worker_routine, (void*) w ) != 0 ) 
         perror( "Error: unable to create worker thread." );
 }
 
 /******************************************************************************
  * initialize the a worker to begin waiting for jobs on the queue
  *****************************************************************************/
-static void internal_parpool_error ( parpool* pool, const char* msg )
+static void internal_parpool_error ( parpool *pool, const char *msg )
 {
     parpool_delete ( pool );
     perror( msg );
@@ -237,7 +257,7 @@ static void internal_parpool_error ( parpool* pool, const char* msg )
 /******************************************************************************
  * clear the job queue and free malloced memory
  *****************************************************************************/
-static void internal_queue_clear ( struct parpool_queue* queue )
+static void internal_queue_clear ( struct parpool_queue *queue )
 {
     if ( queue == NULL ) return;
     struct parpool_job* job_ptr = queue->next_job;
@@ -254,7 +274,7 @@ static void internal_queue_clear ( struct parpool_queue* queue )
 /******************************************************************************
  * cleanup all memory malloced for parpool
  *****************************************************************************/
-static void internal_parpool_cleanup ( parpool* pool )
+static void internal_parpool_cleanup ( parpool *pool )
 {
     if ( pool == NULL ) return;
     for ( int i = 0; i < pool->pool_size; i++ )
@@ -271,10 +291,9 @@ static void internal_parpool_cleanup ( parpool* pool )
 /******************************************************************************
  * delete and free worker
  *****************************************************************************/
-static void internal_worker_delete ( struct worker* wrker )
+static void internal_worker_delete ( struct worker *wrker )
 {
     wrker->status = WORKER_SHUTDOWN;
-
 
     if ( pthread_join( wrker->thread, NULL ) != 0 )
         printf("Error: unable to shutdown worker.");
@@ -283,7 +302,7 @@ static void internal_worker_delete ( struct worker* wrker )
 /******************************************************************************
  * delete and free job
  *****************************************************************************/
-static void internal_job_delete ( struct parpool_job* job )
+static void internal_job_delete ( struct parpool_job *job )
 {
     free( job );
 } 
@@ -291,7 +310,7 @@ static void internal_job_delete ( struct parpool_job* job )
 /******************************************************************************
  * delete and free queue
  *****************************************************************************/
-static void internal_queue_delete ( struct parpool_queue* queue )
+static void internal_queue_delete ( struct parpool_queue *queue )
 {
     internal_queue_clear( queue );
     pthread_mutex_destroy( &queue->mutex_lock );
@@ -301,20 +320,20 @@ static void internal_queue_delete ( struct parpool_queue* queue )
 /******************************************************************************
  * The main routine run by each worker
  *****************************************************************************/
-static void internal_worker_routine ( void* args ) 
+static void internal_worker_routine ( void *args ) 
 {
-    struct worker* this_worker = ( struct worker* ) args;
+    struct worker *this_worker = ( struct worker * ) args;
 
     while ( this_worker->status != WORKER_SHUTDOWN ) 
     {
-        struct parpool_job* job = internal_job_request( this_worker->job_queue );
+        struct parpool_job *job = internal_job_request( this_worker->job_queue );
         if ( job == NULL )
             continue;
 
         // evaluate the actual function
-        future* future = job->future;
+        future *future = job->future;
         future->status = JOB_RUNNING;
-        void* out = job->fcn( job->fcn_args );
+        void *out = job->fcn( job->fcn_args );
         job->future->output = out;
         future->status = JOB_COMPLETED;
 
