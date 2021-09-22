@@ -32,37 +32,38 @@ SOFTWARE.
 /******************************************************************************
  *                            Internal Functions
  *****************************************************************************/
-static struct parpool_queue *   internal_queue_init ( );
+static struct parpool_queue * internal_queue_init ( );
 
-static void                     internal_worker_init 
-                                ( 
-                                    int id, 
-                                    struct parpool_queue *q, 
-                                    struct parpool_worker *wrkr
-                                );
+static void internal_worker_init 
+( 
+    int id, 
+    struct parpool_queue *q, 
+    struct parpool_worker *wrkr
+);
 
-static struct parpool_job *     internal_job_init 
-                                ( 
-                                    future * fut, 
-                                    void *(fcn)(void *), 
-                                    void *arg 
-                                );
+static struct parpool_job * internal_job_init 
+( 
+    future * fut, 
+    void *(fcn)(void *), 
+    void *arg 
+);
 
-static void                     internal_parpool_error 
-                                ( 
-                                    parpool *pool, 
-                                    const char *msg 
-                                );
+static void internal_parpool_error 
+( 
+    parpool *pool, 
+    const char *msg 
+);
 
-static void                     internal_queue_clear     ( struct parpool_queue *q );
-static void                     internal_parpool_cleanup ( parpool *pool );
+static void internal_queue_clear ( struct parpool_queue *q );
+static void internal_parpool_cleanup ( parpool *pool );
 
-static void                     internal_worker_delete   ( struct parpool_worker *wrkr );
-static void                     internal_job_delete      ( struct parpool_job *pool );
-static void                     internal_queue_delete    ( struct parpool_queue *q );
+static void internal_worker_delete ( struct parpool_worker *wrkr );
+static void internal_job_delete ( struct parpool_job *pool );
+static void internal_queue_delete ( struct parpool_queue *q );
+static void internal_worker_routine ( void *argv );
 
-static struct parpool_job *     internal_job_request     ( struct parpool_queue *q );
-static void                     internal_worker_routine  ( void *argv );
+static struct parpool_job * internal_job_request ( struct parpool_queue *q );
+
 
 
 

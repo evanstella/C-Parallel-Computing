@@ -49,7 +49,6 @@ enum future_status
     JOB_COMPLETED,
     JOB_RUNNING,
     JOB_QUEUED
-
 };
 
 /******************************************************************************

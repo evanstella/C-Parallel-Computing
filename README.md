@@ -37,9 +37,9 @@ In the following extremely simple example, we will use the parallel pool to mult
 ```C
 
 /* Mulitply the number at num_in by 2 and return the pointer*/
-void* fcn ( void* num_in )
+void * fcn ( void *num_in )
 {
-    int* n = (int*) num_in;
+    int *n = (int *) num_in;
     *n = (*n) * 2;
 
     return num_in;
@@ -48,26 +48,26 @@ void* fcn ( void* num_in )
 int main ( void )
 {
     // start a parpool with 4 threads
-    parpool* pool = parpool_init(4);
+    parpool *pool = parpool_init(4);
     
     // allocate the futures
     future futures[10];
     
-    // use the parpool to multiply integers 1-9 by 2;
+    // use the parpool to multiply integers 0-9 by 2;
     int numbers[10];
     for ( int i = 0; i < 10; i++ )
     {
         numbers[i] = i;
-        parpool_eval( pool, &futures[i], fcn, (void*)(&numbers[i]) );
+        parpool_eval( pool, &futures[i], fcn, (void *)(&numbers[i]) );
     }
 
-    // halt execution until all the jobs have completed
+    // block execution until all the jobs have completed
     parpool_wait_all( futures, 10 );
 
     // print the results
     for ( int i = 0; i < 10; i++ )
     {
-        int* result = (int*) futures[i].output;
+        int *result = (int *) futures[i].output;
         printf( "%d ", *result );
     }
 
