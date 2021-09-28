@@ -147,7 +147,7 @@ void parpool_eval ( parpool *pool, future *f, void *(fcn)(void *), void *argv )
  *****************************************************************************/
 void parpool_wait ( future *future )
 {
-    while(1) if ( future->status == JOB_COMPLETED ) return;
+    while (1) if ( future->status == JOB_COMPLETED ) return;
 }
 
 /******************************************************************************
@@ -156,7 +156,7 @@ void parpool_wait ( future *future )
 void parpool_wait_all ( future *futures, int num_futures )
 {
     int num_completed = 0;
-    while(1) {
+    while (1) {
         for ( int i = 0; i < num_futures; i++ ) 
         {
             if ( futures[i].status == JOB_COMPLETED )

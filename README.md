@@ -1,6 +1,6 @@
 # An Asynchronous Computing Implementation for C
 
-This is a simple asynchronous parallel thread pool implementation for ANSI C that is meant to mimic the user-friendly interface of MATLAB's Parallel Computing Toolbox. The code is implemented using POSIX Threads but no external dependances. Projects using this code should be compiled with `-lpthread`.
+This is a simple asynchronous parallel thread pool implementation for ANSI C that is meant to mimic the user-friendly interface of MATLAB's Parallel Computing Toolbox thread pool implementation. The code is implemented using POSIX Threads but no external dependances. Projects using this code should be compiled with `-lpthread`.
 
 ## Interface
 
@@ -13,20 +13,20 @@ This is a simple asynchronous parallel thread pool implementation for ANSI C tha
 `parpool* parpool_init ( int num_threads )`
 - Create a parallel thread pool with the inputted number of threads.
 
-`void parpool_eval ( parpool* pool, future* future, void* (*fcn)(void), void* arg )`
+`void parpool_eval ( parpool *pool, future *future, void *(fcn)(void *), void* arg )`
 - Add a job for the parpool to execute. 
 - The next available worker will execute the function passed in as `fcn` with the argument `arg`.
 - The output of the function is stored in the future when it has completed execution
 
-`void parpool_wait ( future* future )`
+`void parpool_wait ( future *future )`
 - Halt execution of the calling thread until the future has completed.
 - Once the future has completed, the output of the function that was run is in `future.output`
 
-`void parpool_wait_all ( future* futures, int num_futures )`
+`void parpool_wait_all ( future *futures, int num_futures )`
 - Halt execution of the calling thread until `num_futures` in `futures` has completed.
 - `num_futures` should be equal to the number of futures stored in `futures`
 
-`parpool_delete ( parpool* pool )`
+`parpool_delete ( parpool *pool )`
 - Deallocate the parpool and kill all of its workers.
 
 
