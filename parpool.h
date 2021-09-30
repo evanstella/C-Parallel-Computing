@@ -109,7 +109,7 @@ struct parpool_queue
     int                     length;
     struct parpool_job *    next_job;
     struct parpool_job *    last_job;
-    pthread_mutex_t         mutex_lock;
+    pthread_spinlock_t      lock;
     
 };
 

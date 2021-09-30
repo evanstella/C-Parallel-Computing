@@ -127,7 +127,7 @@ void parpool_eval ( parpool *pool, future *f, void *(fcn)(void *), void *argv )
     struct parpool_job *job = internal_job_init( f, fcn, argv );
 
     struct parpool_queue *queue = pool->queue;
-    pthread_mutex_lock( &queue->mutex_lock );
+    pthread_spin_lock( &queue->lock );
     if ( queue->next_job == NULL ) 
     {
         queue->next_job = job;
@@ -139,7 +139,7 @@ void parpool_eval ( parpool *pool, future *f, void *(fcn)(void *), void *argv )
         queue->last_job = job;
     }
     queue->length++;
-    pthread_mutex_unlock( &queue->mutex_lock );
+    pthread_spin_unlock( &queue->lock );
 }
 
 /******************************************************************************
@@ -189,7 +189,7 @@ static struct parpool_job* internal_job_request ( struct parpool_queue* queue )
 {
     if ( queue->length == 0 ) return NULL;
 
-    pthread_mutex_lock( &queue->mutex_lock );
+    pthread_spin_lock( &queue->lock );
     struct parpool_job* job = queue->next_job;
 
     if ( job != NULL ) 
@@ -198,7 +198,7 @@ static struct parpool_job* internal_job_request ( struct parpool_queue* queue )
         queue->length--;
     }
 
-    pthread_mutex_unlock( &queue->mutex_lock );
+    pthread_spin_unlock( &queue->lock );
     return job;
 }
 
@@ -220,9 +220,9 @@ static struct parpool_queue* internal_queue_init ( )
     queue->next_job = NULL;
     queue->last_job = NULL;
     
-    if ( pthread_mutex_init( &queue->mutex_lock, NULL ) != 0 ) 
+    if ( pthread_spin_init( &queue->lock, PTHREAD_PROCESS_PRIVATE ) != 0 ) 
     {
-        printf("Error: initializing queue mutex lock");
+        printf("Error: initializing queue spinlock");
         return NULL;
     }
 
@@ -315,7 +315,7 @@ static void internal_job_delete ( struct parpool_job *job )
 static void internal_queue_delete ( struct parpool_queue *queue )
 {
     internal_queue_clear( queue );
-    pthread_mutex_destroy( &queue->mutex_lock );
+    pthread_spin_destroy( &queue->lock );
     free( queue );
 }
 
